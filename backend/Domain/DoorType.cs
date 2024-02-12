@@ -1,4 +1,4 @@
-namespace ApI.Data;
+namespace Domain;
 
 public enum DoorType
 {

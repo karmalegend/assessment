@@ -1,8 +1,8 @@
-using ApI.Data;
 using ApI.Middleware;
+using Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Services;
 
 namespace ApI.Controllers;
 
@@ -11,17 +11,17 @@ namespace ApI.Controllers;
 [Authorize]
 public class UsersController : ControllerBase
 {
-    private readonly ParkingDbContext _parkingDbContext;
+    private readonly IUserManagementService _userManagementService;
 
-    public UsersController(ParkingDbContext parkingDbContext)
+    public UsersController(IUserManagementService userManagementService)
     {
-        _parkingDbContext = parkingDbContext;
+        _userManagementService = userManagementService;
     }
 
     [HttpGet]
-    public async Task<List<User>> GetUsers(CancellationToken cancellationToken)
+    public async Task<IEnumerable<User>> GetUsers(CancellationToken cancellationToken)
     {
         var partnerId = User.Claims.First(x => x.Type == CustomClaimNames.PartnerId).Value;
-        return await _parkingDbContext.Users.Where(x => x.PartnerId == partnerId).ToListAsync(cancellationToken);
+        return await _userManagementService.GetAllUsersByPartnerIdAsync(partnerId, cancellationToken);
     }
 }

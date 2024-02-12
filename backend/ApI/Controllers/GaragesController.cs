@@ -1,7 +1,8 @@
-using ApI.Data;
+using System.Net;
+using Domain;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using Services;
 
 namespace ApI.Controllers;
 
@@ -10,29 +11,29 @@ namespace ApI.Controllers;
 [Authorize]
 public class GaragesController : ControllerBase
 {
-    private readonly ParkingDbContext _parkingDbContext;
+    private readonly IGarageManagementService _garageManagementService;
 
-    public GaragesController(ParkingDbContext parkingDbContext)
+    public GaragesController(IGarageManagementService garageManagementService)
     {
-        _parkingDbContext = parkingDbContext;
+        _garageManagementService = garageManagementService;
     }
 
     [HttpGet]
-    public Task<List<Garage>> GetGarages(CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(List<Garage>), (int) HttpStatusCode.OK)]
+    public async Task<IActionResult> GetGarages(CancellationToken cancellationToken)
     {
-        return _parkingDbContext.Garages.Include(x => x.Doors).ToListAsync(cancellationToken);
+        return new OkObjectResult(await _garageManagementService.GetAllGaragesAsync(cancellationToken));
     }
 
     [HttpGet("{garageId}")]
-    public async Task<ActionResult<Garage>> GetGarage(Guid garageId, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(Garage), (int) HttpStatusCode.OK)]
+    [ProducesResponseType((int) HttpStatusCode.NotFound)]
+    public async Task<IActionResult> GetGarage(Guid garageId, CancellationToken cancellationToken)
     {
-        var garage = await _parkingDbContext.Garages.Include(x => x.Doors)
-            .FirstOrDefaultAsync(g => g.Id == garageId, cancellationToken);
-        if (garage == null)
-        {
-            return new NotFoundResult();
-        }
+        var garage = await _garageManagementService.GetGarageByIdAsync(garageId, cancellationToken);
 
-        return garage;
+        if (garage == null) return new NotFoundResult();
+
+        return new OkObjectResult(garage);
     }
 }

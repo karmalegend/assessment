@@ -7,12 +7,13 @@ namespace ApI.Middleware;
 
 public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthenticationOptions>
 {
-    private static readonly List<ApiClient> ApiClients = new List<ApiClient>
+    private static readonly List<ApiClient> ApiClients = new()
     {
         new ApiClient
         {
             PartnerId = "partner-1",
-            ApiKeys = new[] { "4ef18f62-c77a-447e-a3b6-c4bf2e5027d0" }
+            ApiKeys = new[] {"4ef18f62-c77a-447e-a3b6-c4bf2e5027d0"},
+            UserId = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
         }
     };
 
@@ -21,42 +22,44 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
     {
     }
 
-    protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
+    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         var apiClient = GetApiClient();
         if (apiClient == null)
         {
             Logger.LogWarning("An API request was received without the x-api-key header");
 
-            return AuthenticateResult.Fail("Invalid Api Client");
+            return Task.FromResult(AuthenticateResult.Fail("Invalid Api Client"));
         }
 
         Logger.BeginScope("{PartnerId}", apiClient.PartnerId);
 
-        var claims = new[] { new Claim(CustomClaimNames.PartnerId, apiClient.PartnerId) };
+        var claims = new[]
+        {
+            new Claim(CustomClaimNames.PartnerId, apiClient.PartnerId),
+            new Claim(CustomClaimNames.UserId, apiClient.UserId)
+        };
         var identity = new ClaimsIdentity(claims, ApiKeyAuthenticationOptions.DefaultScheme);
-        var identities = new List<ClaimsIdentity> { identity };
+        var identities = new List<ClaimsIdentity> {identity};
         var principal = new ClaimsPrincipal(identities);
         var ticket = new AuthenticationTicket(principal, ApiKeyAuthenticationOptions.DefaultScheme);
 
-        return AuthenticateResult.Success(ticket);
+        return Task.FromResult(AuthenticateResult.Success(ticket));
     }
 
     private ApiClient? GetApiClient()
     {
-        if (Request.Headers.TryGetValue(ApiKeyAuthenticationOptions.HeaderName, out var apiKey) && apiKey.Count != 1)
-        {
-            return ApiClients.FirstOrDefault(x => x.ApiKeys.Contains(apiKey.First()));
-        }
+        if (Request.Headers.TryGetValue(ApiKeyAuthenticationOptions.HeaderName, out var apiKey) && apiKey.Count == 1)
+            return ApiClients.Find(x => x.ApiKeys.Contains(apiKey[0]));
 
-        // Fallback to the first available client to simplify assessment testing
-        return ApiClients.First();
+        return null;
     }
 
-    class ApiClient
+    private sealed class ApiClient
     {
         public string[] ApiKeys { get; set; }
 
         public string PartnerId { get; set; }
+        public string UserId { get; set; }
     }
 }
