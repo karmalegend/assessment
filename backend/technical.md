@@ -6,7 +6,7 @@
 * Furthermore documentation should be written and the `Swagger` spec updated to reflect all potential responses.
 * DTO's would also be a much wanted introduction.
 * Lastly, we should consider using error & trace logging and error notifying tools for real-time problem detection.
-* PS. one could also look into bundling most of the DB interaction in a transaction making it easier to roll back if somewhere along the line a businessrule is violated. it's currently designed with the possibility of something happening in mind an reducing the impact as much as possible. However it's worse than a transaction.
+* PS. one could also look into bundling most of the DB interaction in a transaction making it easier to roll back if somewhere along the line a businessrule is violated. it's currently designed with the possibility of something happening in mind and reducing the impact as much as possible. However it's worse than a transaction.
 
 ### 2. How would you make the API idempotent?
 The Api is largely idempotent already given the small number of `POST` requests and the fact the one `PATCH` is implemented in an idempotent way. As for the `POST` method we could add an idempotency key as a request header. As largely described [here](https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/)
